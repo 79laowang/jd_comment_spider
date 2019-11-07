@@ -11,21 +11,54 @@ import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 
 # 词云形状图片
-WC_MASK_IMG = 'wawa.jpg'
+WC_MASK_IMG = './wawa.jpg'
 # 评论数据保存文件
 COMMENT_FILE_PATH = 'jd_comment.txt'
-# 词云字体
-WC_FONT_PATH = '/Library/Fonts/Songti.ttc'
+# 词云字体 download link: https://pic.chinesefontdesign.com/files/Classic_Song_ti_Font.zip
+WC_FONT_PATH = './Classic_Songti_Font.TTF'
 
+def get_wc_font():
+    """
+    词云字体需要自己下载到当前路径下
+    """
+    import urllib.request
+    from zipfile import ZipFile
+    import shutil
+    import sys
+
+    print('Downloading font ...')
+    url = 'https://pic.chinesefontdesign.com/files/Classic_Song_ti_Font.zip'
+    fr = urllib.request.urlopen(url)
+    fname = url.split('/')[-1]
+    with open(fname,'wb') as fout:
+        fout.write(fr.read())
+    if os.path.exists(fname):
+        print("Extracting the file %s",fname)
+        with ZipFile(fname, 'r') as zipf:
+            zipf.extractall('/tmp')
+        try:
+            shutil.copyfile('/tmp/Classic Song ti Font.TTF',
+                './Classic_Songti_Font.TTF')
+        except IOError as e:
+            print("Unable to copy file. %s" % e)
+            exit(1)
+        except:
+            print("Unexpected error:", sys.exc_info())
+            exit(1)
+    os.remove(fname)
 
 def spider_comment(page=0):
     """
     爬取京东指定页的评价数据
     :param page: 爬取第几，默认值为0
     """
-    url = 'https://sclub.jd.com/comment/productPageComments.action?callback=fetchJSON_comment98vv4646&productId=1263013576' \
+    #  url = 'https://sclub.jd.com/comment/productPageComments.action?callback=fetchJSON_comment98vv4646&productId=1263013576' \
+          #  '&score=0&sortType=5&page=%s&pageSize=10&isShadowSku=0&fold=1' % page
+    #  kv = {'user-agent': 'Mozilla/5.0', 'Referer': 'https://item.jd.com/1263013576.html'}
+    url = \
+    'https://sclub.jd.com/comment/productPageComments.action?callback=fetchJSON_comment98vv4646&productId=100001809769' \
           '&score=0&sortType=5&page=%s&pageSize=10&isShadowSku=0&fold=1' % page
-    kv = {'user-agent': 'Mozilla/5.0', 'Referer': 'https://item.jd.com/1263013576.html'}
+    kv = {'user-agent': 'Mozilla/5.0', 'Referer':'https://item.jd.com/100001809769.html'}
 
     try:
         r = requests.get(url, headers=kv)
@@ -57,7 +90,7 @@ def batch_spider_comment():
     for i in range(100):
         spider_comment(i)
         # 模拟用户浏览，设置一个爬虫间隔，防止ip被封
-        time.sleep(random.random() * 5)
+        time.sleep(random.random() * 10)
 
 
 def cut_word():
@@ -80,6 +113,9 @@ def create_word_cloud():
     """
     # 设置词云形状图片
     wc_mask = np.array(Image.open(WC_MASK_IMG))
+    # 字体库不存在，下载之
+    if not os.path.exists(WC_FONT_PATH):
+        get_wc_font()
     # 设置词云的一些配置，如：字体，背景色，词云形状，大小
     wc = WordCloud(background_color="white", max_words=2000, mask=wc_mask, scale=4,
                    max_font_size=50, random_state=42, font_path=WC_FONT_PATH)
@@ -95,7 +131,7 @@ def create_word_cloud():
 
 if __name__ == '__main__':
     # 爬取数据
-    # batch_spider_comment()
+    batch_spider_comment()
 
     # 生成词云
     create_word_cloud()
